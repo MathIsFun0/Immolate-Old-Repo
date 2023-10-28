@@ -9,7 +9,8 @@ For every library the program uses, you must install it with pip using the comma
 
 ## Usage
 Start a new random seed run in Balatro.
-To start the program, run the command `py immolate.py` and switch to Balatro.
+To start the seed searcher, run the command `py immolate_runner.py` and switch to Balatro.
+Copy the include folder and the file immolate.py to write your own programs with Immolate's functions.
 
 Recommended/required game settings:
 - Game Speed: 4
