@@ -1,15 +1,11 @@
 # This script assumes that you are playing fullscreen 1920x1080 with no CRT effect.
 import immolate as im
 from difflib import SequenceMatcher
-import pyautogui, pytesseract, keyboard, time
+import pyautogui, keyboard, time
 
 # User-modifiable variables
 getMouseCoords = False # For getting new coords for buttons/cards
 pyautogui.PAUSE = 0.05 # Time between actions
-pytesseract.pytesseract.tesseract_cmd = "C:/Program Files/Tesseract-OCR/tesseract.exe" # Install location of tesseract, for reading text
-
-def similar(a, b):
-    return SequenceMatcher(None, a, b).ratio()
 
 if getMouseCoords:
     print("Immolate " + im.version);
@@ -23,15 +19,40 @@ if getMouseCoords:
 
 
 if __name__ == "__main__":
-    # Here's some code to find seeds with at least 1 Spectral Pack
-    # This would be useful for SS searches
+    # This current demo reads out all the basic information gathered from skips in Ante 1
+    # It also prints each seed that it finds
     print("Immolate " + im.version);
     print("Hold Ctrl+C to exit...")
     time.sleep(5)
-    while True:
+    while (True):
+        print("------------------")
         im.reset()
-        time.sleep(0.4) # Wait for animation
-        tag1 = im.readText(im.blindMenu.tag1_selectedBox).replace("\n"," ")
-        tag2 = im.readText(im.blindMenu.tag2_deselectedBox).replace("\n"," ")
-        if max(similar(tag1, im.Tag.ETHEREAL.value),similar(tag2, im.Tag.ETHEREAL.value))>0.75:
-            im.printSeed()
+        time.sleep(0.4) # Wait for text to appear
+        tag1 = im.closestValue(im.Tag, im.readText(im.blindMenu.tag1_selectedBox).replace("\n"," "))
+        tag2 = im.closestValue(im.Tag, im.readText(im.blindMenu.tag2_deselectedBox).replace("\n"," "))
+        print(tag1)
+        if tag1 != None and tag1.associatedPack != None:
+            im.click(im.blindMenu.smallBlindSkipButton)
+            pack = tag1.associatedPack
+            time.sleep(3) # Wait for opening animation
+            for i in range(pack.numCards):
+                im.move(im.boosterPackMenu.packPosition[pack.numCards][i])
+                time.sleep(0.3) # Wait for text display animation
+                print(im.closestValue(pack.cardType, im.readLine(im.boosterPackMenu.packDescription[pack.numCards][i])))
+            if tag2 != None and tag2.associatedPack != None:
+                im.click(im.boosterPackMenu.skipButton)
+                time.sleep(0.5) # Another delay to prevent bugs
+        elif tag2 != None and tag2.associatedPack != None: 
+            im.click(im.blindMenu.smallBlindSkipButton)
+        if tag1 == im.Tag.BOSS:
+            time.sleep(1) # Wait for reroll animation
+        print(tag2)
+        if tag2 != None and tag2.associatedPack != None:
+            pack = tag2.associatedPack
+            im.click(im.blindMenu.bigBlindSkipButton)
+            time.sleep(3) # Wait for opening animation
+            for i in range(pack.numCards):
+                im.move(im.boosterPackMenu.packPosition[pack.numCards][i])
+                time.sleep(0.3) # Wait for text display animation
+                print(im.closestValue(pack.cardType, im.readLine(im.boosterPackMenu.packDescription[pack.numCards][i])))
+        im.printSeed()

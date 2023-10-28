@@ -2,11 +2,10 @@
 A primitive seed-searching tool for Balatro.
 
 ## Installing
+Windows 10 or above must be used.
 Python must be installed.
 
 For every library the program uses, you must install it with pip using the command `py -m pip install [library name]`
-
-The pytesseract library requires a standalone program that can be installed here: https://github.com/UB-Mannheim/tesseract/wiki
 
 ## Usage
 Start a new random seed run in Balatro.

@@ -1,14 +1,15 @@
 from enum import Enum
 import pyautogui
 import keyboard
-import pytesseract
+from include import winocr
 import pyperclip
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageEnhance
+from difflib import SequenceMatcher
 import time
 
 # This is what stores all of the variables and info required by programs using Immolate.
-version = "v0.01"
+version = "v0.02"
 
 class options:
     exitKeyCombination = "ctrl+c"
@@ -26,6 +27,10 @@ def click(pos):
     time.sleep(0.05);
     pyautogui.click()
 
+def move(pos):
+    checkForExit()
+    pyautogui.moveTo(pos[0], pos[1])
+
 def reset():
     click(inGame.optionsButton);
     click(quickOptions.newRunButton);
@@ -42,8 +47,35 @@ def readText(box):
     img = pyautogui.screenshot(region=(box[0],box[1],box[2]-box[0],box[3]-box[1]))
     width, height = img.size
     img = img.resize((width*3, height*3), resample=Image.NEAREST).filter(ImageFilter.SHARPEN);
-    img = np.array(img)
-    return pytesseract.image_to_string(img)
+    img = ImageEnhance.Contrast(img).enhance(1.5)
+    return winocr.recognize_pil_sync(img, 'en')['text']
+
+def readLine(box):
+    # Takes screenshot, makes it larger, runs OCR
+    # This one only returns the first line
+    img = pyautogui.screenshot(region=(box[0],box[1],box[2]-box[0],box[3]-box[1]))
+    width, height = img.size
+    img = img.resize((width*3, height*3), resample=Image.NEAREST).filter(ImageFilter.SHARPEN);
+    img = ImageEnhance.Contrast(img).enhance(1.5)
+    try:
+        result = winocr.recognize_pil_sync(img, 'en')['lines'][0]['text']
+    except:
+        result = None
+    return result
+
+# Finds the closest value in an Enum of things (jokers, spectral cards, etc.) to a string
+# Can be used to overcome the inaccuracy of OCR
+def closestValue(enum, string):
+    similarEnum = None
+    maxSimilarity = 0.0
+
+    for element in enum:
+        similarity = SequenceMatcher(None, string, element.value).ratio()
+        if similarity > maxSimilarity:
+            maxSimilarity = similarity
+            similarEnum = element
+    
+    return similarEnum
 
 
 # Coordinates of buttons and bounding boxes of text
@@ -84,6 +116,26 @@ class blindMenu:
     tag1_selectedBox = (690, 835, 840, 911)
     tag2_deselectedBox = (1021, 925, 1172, 1000)
     tag2_selectedBox = (1024, 839, 1171, 911)
+    
+class boosterPackMenu:
+    packPosition = [
+        None, #0
+        None, #1
+        [(968, 842), (1146, 841)], #2
+        None, #3
+        None, #4
+        [(641, 841), (852, 837), (1061, 835), (1271, 839), (1471, 831)] #5
+    ]
+    packDescription = [
+        None, #0
+        None, #1
+        [(867, 366, 1063, 500), (1056, 366, 1244, 500)], #2
+        None, #3
+        None, #4
+        [(558, 366, 732, 500), (765, 366, 935, 500), (966, 366, 1152, 500),
+         (1176, 366, 1352, 500), (1378, 366, 1563, 500)] #5
+    ]
+    skipButton = (1057, 1006)
 
 # Names or descriptions of things
 class Joker(Enum):
@@ -184,15 +236,33 @@ class Spectral(Enum):
     IMMOLATE = "Immolate"
 
 class BoosterPack(Enum):
-    ARCANA = "Arcana Pack"
-    JUMBO_ARCANA = "Jumbo Arcana Pack"
-    MEGA_ARCANA = "Mega Arcana Pack"
-    CELESTIAL = "Celestial Pack"
-    JUMBO_CELESTIAL = "Jumbo Celestial Pack"
-    MEGA_CELESTIAL = "Mega Celestial Pack"
-    SPECTRAL = "Spectral Pack"
-    JUMBO_SPECTRAL = "Jumbo Spectral Pack"
-    MEGA_SPECTRAL = "Mega Spectral Pack"
+    ARCANA = "Arcana Pack", 3, Tarot
+    JUMBO_ARCANA = "Jumbo Arcana Pack", 4, Tarot
+    MEGA_ARCANA = "Mega Arcana Pack", 5, Tarot
+    CELESTIAL = "Celestial Pack", 3, Planet
+    JUMBO_CELESTIAL = "Jumbo Celestial Pack", 4, Planet
+    MEGA_CELESTIAL = "Mega Celestial Pack", 5, Planet
+    SPECTRAL = "Spectral Pack", 2, Spectral
+    JUMBO_SPECTRAL = "Jumbo Spectral Pack", 3, Spectral
+    MEGA_SPECTRAL = "Mega Spectral Pack", 4, Spectral
+
+    # Kudos to https://stackoverflow.com/questions/12680080/python-enums-with-attributes
+    def __new__(cls, *args, **kwds):
+        obj = object.__new__(cls)
+        obj._value_ = args[0]
+        return obj
+
+    def __init__(self, _: str, numCards: int = None, cardType: Enum = None):
+        self._numCards_ = numCards
+        self._cardType_ = cardType
+        
+    @property
+    def numCards(self):
+        return self._numCards_
+    
+    @property
+    def cardType(self):
+        return self._cardType_
 
 class Tag(Enum):
     UNCOMMON = "Shop has an Uncommon Joker"
@@ -205,9 +275,22 @@ class Tag(Enum):
     VOUCHER = "Adds one Voucher to the next shop"
     BOSS = "Rerolls the Boss Blind"
     GOLD_SEAL = "Gold Seal card in the shop"
-    CHARM = "Gives a free Mega Arcana Pack"
-    METEOR = "Gives a free Mega Celestial Pack"
+    CHARM = "Gives a free Mega Arcana Pack", BoosterPack.MEGA_ARCANA
+    METEOR = "Gives a free Mega Celestial Pack", BoosterPack.MEGA_CELESTIAL
     ENHANCED = "Enhanced card in the shop"
     HANDY = "Start round with an extra 3 Hands"
     GARBAGE = "Start round with an extra 3 Discards"
-    ETHEREAL = "Gives a free Spectral Pack"
+    ETHEREAL = "Gives a free Spectral Pack", BoosterPack.SPECTRAL
+
+    # Kudos to https://stackoverflow.com/questions/12680080/python-enums-with-attributes
+    def __new__(cls, *args, **kwds):
+        obj = object.__new__(cls)
+        obj._value_ = args[0]
+        return obj
+
+    def __init__(self, _: str, associatedPack: BoosterPack = None):
+        self._associatedPack_ = associatedPack
+        
+    @property
+    def associatedPack(self):
+        return self._associatedPack_
