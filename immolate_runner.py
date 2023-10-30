@@ -3,9 +3,23 @@ import immolate as im
 from difflib import SequenceMatcher
 import pyautogui, keyboard, time
 
+polySeed = False
 # User-modifiable variables
 getMouseCoords = False # For getting new coords for buttons/cards
 pyautogui.PAUSE = 0.05 # Time between actions
+fileName = "polychromeAuraSeeds.txt"
+
+def printToFile(filename, text):
+    print(text)
+    try:
+        # Check if the file exists
+        with open(filename, 'a') as file:
+            # Append the text to the file
+            file.write(text + '\n')
+    except FileNotFoundError:
+        # If the file doesn't exist, create it and write the text
+        with open(filename, 'w') as file:
+            file.write(text + '\n')
 
 if getMouseCoords:
     print("Immolate " + im.version);
@@ -17,42 +31,73 @@ if getMouseCoords:
         # Display the cursor position
         print(f"Cursor position: X={mouse_x}, Y={mouse_y}")
 
+def detect_aura_value(packPos):
+    global polySeed
+    im.click(im.inGame.optionsButton)
+    im.click(im.quickOptions.settingsButton)
+    im.click(im.settings.game.decreaseGameSpeedButton)
+    im.click(im.settings.game.decreaseGameSpeedButton)
+    keyboard.press("esc")
+    keyboard.release("esc")
+    im.click(im.boosterPackMenu.packPosition[2][packPos])
+    im.click(im.boosterPackMenu.packPosition[2][packPos])
+    time.sleep(2)
+    cards = 8 * [None]
+    for i in range(8):
+        im.move(im.boosterPackMenu.cardPosition[8][i])
+        cards[i] = im.screenshot(im.boosterPackMenu.cardDescription[8][i])
+    for i in range(8):
+        line = im.readLastLineNoEditsFromScreenshot(cards[i])
+        closestCard = im.closestValue(im.Edition, line)
+        if closestCard != None:
+            card = im.closestCard(im.readLineNoEditsFromScreenshot(cards[i]))
+            printToFile(closestCard.value+" "+card.value())
+    im.click(im.inGame.optionsButton)
+    im.click(im.quickOptions.settingsButton)
+    im.click(im.settings.game.increaseGameSpeedButton)
+    im.click(im.settings.game.increaseGameSpeedButton)
+    keyboard.press("esc")
+    keyboard.release("esc")
+    polySeed = True
 
 if __name__ == "__main__":
     # This current demo reads out all the basic information gathered from skips in Ante 1
     # It also prints each seed that it finds
+    # Example aura: 6WNHV6QC
     print("Immolate " + im.version);
     print("Hold Ctrl+C to exit...")
     time.sleep(5)
-    while (True):
-        print("------------------")
-        im.reset()
+    while True:
+        polySeed = False
         time.sleep(0.4) # Wait for text to appear
         tag1 = im.closestValue(im.Tag, im.readText(im.blindMenu.tag1_selectedBox).replace("\n"," "))
         tag2 = im.closestValue(im.Tag, im.readText(im.blindMenu.tag2_deselectedBox).replace("\n"," "))
-        print(tag1)
-        if tag1 != None and tag1.associatedPack != None:
+        if tag1 == im.Tag.ETHEREAL:
             im.click(im.blindMenu.smallBlindSkipButton)
             pack = tag1.associatedPack
             time.sleep(3) # Wait for opening animation
             for i in range(pack.numCards):
                 im.move(im.boosterPackMenu.packPosition[pack.numCards][i])
                 time.sleep(0.3) # Wait for text display animation
-                print(im.closestValue(pack.cardType, im.readLine(im.boosterPackMenu.packDescription[pack.numCards][i])))
-            if tag2 != None and tag2.associatedPack != None:
+                closestCard = im.closestValue(pack.cardType, im.readLine(im.boosterPackMenu.packDescription[pack.numCards][i]))
+                if (closestCard == im.Spectral.AURA): detect_aura_value(i)
+            if tag2 == im.Tag.ETHEREAL:
                 im.click(im.boosterPackMenu.skipButton)
                 time.sleep(0.5) # Another delay to prevent bugs
-        elif tag2 != None and tag2.associatedPack != None: 
+        elif tag2 == im.Tag.ETHEREAL: 
             im.click(im.blindMenu.smallBlindSkipButton)
         if tag1 == im.Tag.BOSS:
             time.sleep(1) # Wait for reroll animation
-        print(tag2)
-        if tag2 != None and tag2.associatedPack != None:
+        if tag2 == im.Tag.ETHEREAL:
             pack = tag2.associatedPack
             im.click(im.blindMenu.bigBlindSkipButton)
             time.sleep(3) # Wait for opening animation
             for i in range(pack.numCards):
                 im.move(im.boosterPackMenu.packPosition[pack.numCards][i])
                 time.sleep(0.3) # Wait for text display animation
-                print(im.closestValue(pack.cardType, im.readLine(im.boosterPackMenu.packDescription[pack.numCards][i])))
-        im.printSeed()
+                closestCard = im.closestValue(pack.cardType, im.readLine(im.boosterPackMenu.packDescription[pack.numCards][i]))
+                if (closestCard == im.Spectral.AURA): detect_aura_value(i)
+        if polySeed:
+            im.printSeedToFile(fileName)
+            printToFile(fileName, "---------")
+        im.reset()
