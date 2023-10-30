@@ -48,10 +48,13 @@ def detect_aura_value(packPos):
         cards[i] = im.screenshot(im.boosterPackMenu.cardDescription[8][i])
     for i in range(8):
         line = im.readLastLineNoEditsFromScreenshot(cards[i])
-        closestCard = im.closestValue(im.Edition, line)
-        if closestCard != None:
+        edition = im.closestValue(im.Edition, line)
+        if edition == im.Edition.POLYCHROME:
             card = im.closestCard(im.readLineNoEditsFromScreenshot(cards[i]))
-            printToFile(closestCard.value+" "+card.value())
+            printToFile(fileName, edition.value+" "+card.value())
+            polySeed = True
+        if edition == None:
+            polySeed = True # Maybe went undetected
     im.click(im.inGame.optionsButton)
     im.click(im.quickOptions.settingsButton)
     im.click(im.settings.game.increaseGameSpeedButton)
