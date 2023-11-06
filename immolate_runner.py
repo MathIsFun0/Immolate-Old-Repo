@@ -56,15 +56,9 @@ def detect_aura_value(packPos):
     for i in range(8):
         im.move(im.boosterPackMenu.cardPosition[8][i])
         cards[i] = im.screenshot(im.boosterPackMenu.cardDescription[8][i])
-        if i == 1:
-            cards[i].show()
     for i in range(8):
         line = im.readLastLineNoEditsFromScreenshot(cards[i])
-        if i == 1:
-            print(line)
         edition = im.closestValue(im.Edition, line)
-        if i == 1:
-            print(edition)
         if edition == im.Edition.POLYCHROME:
             card = im.closestCard(im.readLineNoEditsFromScreenshot(cards[i]))
             printToFile(fileName, edition.value+" "+card.value())
