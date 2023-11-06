@@ -4,6 +4,7 @@ from difflib import SequenceMatcher
 import pyautogui, keyboard, time
 
 polySeed = False
+retrySeed = False
 # User-modifiable variables
 getMouseCoords = False # For getting new coords for buttons/cards
 pyautogui.PAUSE = 0.05 # Time between actions
@@ -33,12 +34,19 @@ if getMouseCoords:
 
 def detect_aura_value(packPos):
     global polySeed
+    # Extra delays for consistency
     im.click(im.inGame.optionsButton)
+    time.sleep(0.05)
     im.click(im.quickOptions.settingsButton)
+    time.sleep(0.05)
     im.click(im.settings.game.decreaseGameSpeedButton)
+    time.sleep(0.05)
     im.click(im.settings.game.decreaseGameSpeedButton)
+    time.sleep(0.05)
     keyboard.press("esc")
+    time.sleep(0.05)
     keyboard.release("esc")
+    time.sleep(0.05)
     im.click(im.boosterPackMenu.packPosition[2][packPos])
     im.click(im.boosterPackMenu.packPosition[2][packPos])
     time.sleep(2)
@@ -54,14 +62,19 @@ def detect_aura_value(packPos):
             printToFile(fileName, edition.value+" "+card.value())
             polySeed = True
         if edition == None:
-            polySeed = True # Maybe went undetected
+            polySeed = True
+    # Extra delays for consistency
     im.click(im.inGame.optionsButton)
+    time.sleep(0.05)
     im.click(im.quickOptions.settingsButton)
+    time.sleep(0.05)
     im.click(im.settings.game.increaseGameSpeedButton)
+    time.sleep(0.05)
     im.click(im.settings.game.increaseGameSpeedButton)
+    time.sleep(0.05)
     keyboard.press("esc")
+    time.sleep(0.05)
     keyboard.release("esc")
-    polySeed = True
 
 if __name__ == "__main__":
     # This current demo reads out all the basic information gathered from skips in Ante 1
@@ -72,6 +85,7 @@ if __name__ == "__main__":
     time.sleep(5)
     while True:
         polySeed = False
+        retrySeed = False
         time.sleep(0.4) # Wait for text to appear
         tag1 = im.closestValue(im.Tag, im.readText(im.blindMenu.tag1_selectedBox).replace("\n"," "))
         tag2 = im.closestValue(im.Tag, im.readText(im.blindMenu.tag2_deselectedBox).replace("\n"," "))
@@ -103,4 +117,7 @@ if __name__ == "__main__":
         if polySeed:
             im.printSeedToFile(fileName)
             printToFile(fileName, "---------")
+        # In case Immolate gets stuck in settings menu...
+        keyboard.press("esc")
+        keyboard.release("esc")
         im.reset()
