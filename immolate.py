@@ -38,6 +38,15 @@ def reset():
     click(gameSelect.playButton);
     time.sleep(2.25);
 
+def resetSeeded(seed):
+    pyperclip.copy(seed)
+    click(inGame.optionsButton)
+    click(quickOptions.newRunButton)
+    click(gameSelect.seededRunButton)
+    click(gameSelect.pasteSeedButton)
+    click(gameSelect.playButton)
+    time.sleep(2.25)
+
 def printSeed():
     click(inGame.optionsButton)
     click(quickOptions.copySeedButton)
@@ -235,7 +244,7 @@ class boosterPackMenu:
             (1217, 468), (1378, 472), (1504, 489)]
     }
     cardDescription = {
-        8: [(521, 144, 724, 350), (651, 144, 838, 350), (766, 144, 973, 350),
+        8: [(521, 144, 724, 350), (651, 144, 838, 370), (766, 144, 973, 350),
             (902, 144, 1901, 350), (1020, 144, 1219, 350), (1149, 144, 1340, 350),
             (1267, 144, 1469, 350), (1394, 144, 1583, 350)]
     }
